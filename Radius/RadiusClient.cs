@@ -66,7 +66,11 @@ namespace FP.Radius
 
 		public async Task<RadiusPacket> SendAndReceivePacket(RadiusPacket packet, int retries = DEFAULT_RETRIES)
 		{
-			using (UdpClient udpClient = new UdpClient())
+			// Starting with Vista, we are able to bind to a local endpoint to guarantee the packet
+			// will be sent out a particular interface
+			// This is explained in the following blog
+			// http://blogs.technet.com/b/networking/archive/2009/04/25/source-ip-address-selection-on-a-multi-homed-windows-computer.aspx
+			using (UdpClient udpClient = _LocalEndPoint == null ? new UdpClient() : new UdpClient(_LocalEndPoint))
 			{
 				udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, _SocketTimeout);
 
@@ -74,13 +78,6 @@ namespace FP.Radius
 
 				try
 				{
-					// Starting with Vista, we are able to bind to a local endpoint to guarantee the packet
-					// will be sent out a particular interface
-					// This is explained in the following blog
-					// http://blogs.technet.com/b/networking/archive/2009/04/25/source-ip-address-selection-on-a-multi-homed-windows-computer.aspx
-					if (_LocalEndPoint != null)
-						udpClient.Client.Bind(_LocalEndPoint);
-
 					if (!IPAddress.TryParse(_HostName, out hostIP))
 					{
 						//Try performing a DNS lookup
